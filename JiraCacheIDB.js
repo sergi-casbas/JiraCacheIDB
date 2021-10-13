@@ -5,20 +5,38 @@ class JiraCachedDB {
     }
     
     async open (){
-        await this.indexed_db.open(['issues', 'changelogs'], 1);
+        await this.indexed_db.open(['issues'], 1);
     }
     
     async JQLQuery(JQL, statusFunction=null, statusArray=null, resultType="issues"){
         return await this._query_jira_api( this.base_url + "rest/api/latest/search?fields=id,updated&jql=" + JQL, resultType, statusFunction, statusArray);
     }
 
-    async issue(issueObject){
+    async issue(issueObject, expand=null){
         let response = {};
+        let expansions = [];
+        if (expand){
+            let expansions = expand.replace(/\s/g, "").split(",");
+        }
+        
 
         // Check if item in the cache is expired or is valid.
         let cached = await this.indexed_db.getItem(issueObject.self, 'issues');
-        if (cached && cached.fields && cached.fields.updated < issueObject.fields.updated) {
+        if (cached && cached.fields && cached.fields.updated < issueObject.fields.updated){ // discard if updated dated is newer than cached.
             cached = null;
+        }
+        if (cached && expansions && !cached.expanded){ // discard if expansions are required, but no expansions exists on cache.
+            cached = null;
+        }
+        if (cached && expansions){
+            for (let i=0; i<expansions.length; i++){ // discard if any of required expansions doesn't exists in cache.
+                if (cached.expanded.indexOf(expansions[i]) == -1){
+                    cached = false;
+                    break;
+                }
+            }
+            // TO-DO add previous selected expansions to refresh.
+
         }
 
         // If the cached value is correct, return it, else query API, recover response and store in cache.
@@ -26,30 +44,19 @@ class JiraCachedDB {
             response = cached;
         }else{
             response =  await this._request_jira_api( this.base_url + `rest/api/latest/issue/${issueObject.id}?`, 'issues');
+            response.expanded = [];
+            if ( expansions.indexOf("changelog")>=0 ){
+                response.changelog =  await this._query_jira_api( this.base_url + `rest/api/latest/issue/${issueObject.id}/changelog/?`, 'values');
+                response.expanded.push("changelog");
+            }
             await this.indexed_db.setItem(issueObject.self, response, 'issues');
         }
 
         return response;
     }
 
-    async changelog(issueObject){
-        let response = {};
-
-        // Check if item in the cache is expired or is valid.
-        let cached = await this.indexed_db.getItem(issueObject.self, 'changelogs');
-        if (cached && cached.fields && cached.fields.updated < issueObject.fields.updated) {
-            cached = null;
-        }
-
-        // If the cached value is correct, return it, else query API, recover response and store in cache.
-        if (cached){
-            response = cached;
-        }else{
-            response =  await this._query_jira_api( this.base_url + `rest/api/latest/issue/${issueObject.id}/changelog/?`, 'values');
-            await this.indexed_db.setItem(issueObject.self, response, 'changelogs');
-        }
-
-        return response;
+    async changelog(issueObject){ // TODO Keep it for compatibility, deprecate it due expansions in issue() is a better and way to gather this information.
+        return (await this.issue(issueObject, "changelog")).changelog;
     }
 
     /**
@@ -72,10 +79,11 @@ class JiraCachedDB {
             let responseJSON = "";
 
             AP.request({
+                /* jshint -W083 */ // ignore Functions declared within loops referencing an outer scoped variable may lead to confusing semantics.
                 url:  queryURL+`&maxResults=${pageSize}&startAt=${currentPage*pageSize}`,
                 dataType: "json",
                 // Process server errors.
-                error :   function(server_response) { _ujg_gft_generic_onError(server_response); }, //TO-DO
+                error :   function(server_response) { _ujg_gft_generic_onError(server_response); }, 
                 // Process server responses.
                 success : function(server_response) {				
                     responseJSON = JSON.parse(server_response); 

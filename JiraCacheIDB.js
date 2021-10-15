@@ -16,7 +16,7 @@ class JiraCachedDB {
         let response = {};
         let expansions = [];
         if (expand){
-            let expansions = expand.replace(/\s/g, "").split(",");
+            expansions = expand.replace(/\s/g, "").split(",");
         }
         
 

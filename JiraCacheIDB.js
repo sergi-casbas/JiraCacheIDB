@@ -2,6 +2,7 @@ class JiraCachedDB {
     constructor(base_url="/") {
         this.base_url = base_url;
         this.indexed_db = new IndexedDBStorage('JiraCachedDB');
+        this._pending = 0;
     }
     
     async open (){
@@ -18,7 +19,8 @@ class JiraCachedDB {
         if (expand){
             expansions = expand.replace(/\s/g, "").split(",");
         }
-        
+
+        this._pending = this._pending + 1;
 
         // Check if item in the cache is expired or is valid.
         let cached = await this.indexed_db.getItem(issueObject.self, 'issues');
@@ -52,7 +54,15 @@ class JiraCachedDB {
             await this.indexed_db.setItem(issueObject.self, response, 'issues');
         }
 
+        this._pending = this._pending - 1;
         return response;
+    }
+
+    /**
+     * Wait until all pending queries are done.
+     */
+    async flush(){
+        while (this._pending > 0){await this._sleep();}
     }
 
     async changelog(issueObject){ // TODO Keep it for compatibility, deprecate it due expansions in issue() is a better and way to gather this information.

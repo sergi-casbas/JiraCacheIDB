@@ -13,7 +13,7 @@ class JiraCachedDB {
         return await this._query_jira_api( this.base_url + "rest/api/latest/search?fields=id,updated&jql=" + JQL, resultType, statusFunction, statusArray);
     }
 
-    async issue(issueObject, expand=null){
+    async issue(issueObject, expand=null, callbackFunction = null){
         let response = {};
         let expansions = [];
         if (expand){
@@ -52,7 +52,13 @@ class JiraCachedDB {
             await this.indexed_db.setItem(issueObject.self, response, 'issues');
         }
 
+        // If a callback function is set, call it.
+        if (callbackFunction){callbackFunction(response);}
+
+        // Remove this item from the queue.
         this._pending = this._pending - 1;
+
+        // Return the response.
         return response;
     }
 

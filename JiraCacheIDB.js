@@ -20,8 +20,6 @@ class JiraCachedDB {
             expansions = expand.replace(/\s/g, "").split(",");
         }
 
-        this._pending = this._pending + 1;
-
         // Check if item in the cache is expired or is valid.
         let cached = await this.indexed_db.getItem(issueObject.self, 'issues');
         if (cached && cached.fields && cached.fields.updated < issueObject.fields.updated){ // discard if updated dated is newer than cached.
@@ -59,11 +57,20 @@ class JiraCachedDB {
     }
 
     /**
+     * Init the asyncronous queue to be ready to use the flush.
+     * @param {integer} queue_size how many elements will be sent asyncronously.
+     */
+    async_queue_init(queue_size){
+        this._pending = queue_size;
+    }
+
+    /**
      * Wait until all pending queries are done.
      */
-    async flush(){
+    async async_queue_flush(){
         while (this._pending > 0){await this._sleep();}
     }
+
 
     async changelog(issueObject){ // TODO Keep it for compatibility, deprecate it due expansions in issue() is a better and way to gather this information.
         return (await this.issue(issueObject, "changelog")).changelog;

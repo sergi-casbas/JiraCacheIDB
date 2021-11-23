@@ -81,11 +81,6 @@ class JiraCachedDB {
         while (this._pending > 0){await this._sleep();}
     }
 
-
-    async changelog(issueObject){ // TODO Keep it for compatibility, deprecate it due expansions in issue() is a better and way to gather this information.
-        return (await this.issue(issueObject, "changelog")).changelog;
-    }
-
     /**
      * Download query from JIRA API
      * @param {string} queryURL URL to download

@@ -1,8 +1,14 @@
 class JiraCachedDB {
-    constructor(base_url="/") {
+    /**
+     * 
+     * @param {string} base_url Optional. Jira instance server base url https://myinstance.atllasian.net
+     * @param {integer} max_request Optional. Max number of concurrent requests to Jira. WARNING change it may drive to unexpected results.
+     */
+    constructor(base_url="/", max_request=100) {
         this.base_url = base_url;
         this.indexed_db = new IndexedDBStorage('JiraCachedDB');
         this._pending = 0;
+        this._MAX_REQUESTS = max_request;
     }
     
     async open (){
@@ -14,6 +20,13 @@ class JiraCachedDB {
     }
 
     async issue(issueObject, expand=null, callbackFunction = null){
+        // Wait until MAX_REQUESTS threshold is not raised.
+        while (this._pending > this._MAX_REQUESTS){
+            await this._sleep();
+        }
+
+        // Mark as a new pending request and initialize local variables.
+        this._pending ++;
         let response = {};
         let expansions = [];
         if (expand){
@@ -36,7 +49,6 @@ class JiraCachedDB {
                 }
             }
             // TO-DO add previous selected expansions to refresh.
-
         }
 
         // If the cached value is correct, return it, else query API, recover response and store in cache.
@@ -63,17 +75,9 @@ class JiraCachedDB {
     }
 
     /**
-     * Init the asyncronous queue to be ready to use the flush.
-     * @param {integer} queue_size how many elements will be sent asyncronously.
-     */
-    async_queue_init(queue_size){
-        this._pending = queue_size;
-    }
-
-    /**
      * Wait until all pending queries are done.
      */
-    async async_queue_flush(){
+    async flush(){
         while (this._pending > 0){await this._sleep();}
     }
 

@@ -55,9 +55,9 @@ class JiraCachedDB {
         // If a callback function is set, call it.
         if (callbackFunction){callbackFunction(response);}
 
-        // Remove this item from the queue.
-        this._pending = this._pending - 1;
-
+        // Mark as a resolved request.
+        this._pending --;
+        
         // Return the response.
         return response;
     }

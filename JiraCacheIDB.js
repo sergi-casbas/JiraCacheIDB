@@ -19,6 +19,11 @@ class JiraCachedDB {
         return await this._query_jira_api( this.base_url + "rest/api/latest/search?fields=id,updated&jql=" + JQL, resultType, statusFunction, statusArray);
     }
 
+    async raw_request(resourceURL, statusFunction=null, statusArray=null, resultType=null){
+        if ( !resourceURL.includes("?")){ resourceURL = resourceURL + "?"; }
+        return await this._query_jira_api( this.base_url + "rest/api/latest" + resourceURL, resultType, statusFunction, statusArray);
+    }
+
     async issue(issueObject, expand=null, callbackFunction = null){
         // Wait until MAX_REQUESTS threshold is not raised.
         while (this._pending > this._MAX_REQUESTS){
@@ -109,6 +114,7 @@ class JiraCachedDB {
                 // Process server responses.
                 success : function(server_response) {				
                     responseJSON = JSON.parse(server_response); 
+                    if ( !responseJSON.startAt ){ responseJSON.startAt=0; }
                     pages[ (responseJSON.startAt / pageSize) ] = responseJSON;
                     downloadedPages++;	
                     // If a status function is indicated call it.
@@ -130,11 +136,17 @@ class JiraCachedDB {
         }
 
         // Prepare results with all the pages sorted.
-        let result = pages[0];
-        if (!result[resultType]) {result[resultType] = [];}
-        for (let i=1; i<pages.length; i++){
-            result[resultType] = result[resultType].concat(pages[i][resultType]);
+        let result;
+        if (resultType){
+            result = pages[0];
+            if (!result[resultType]) {result[resultType] = [];}
+            for (let i=1; i<pages.length; i++){
+                result[resultType] = result[resultType].concat(pages[i][resultType]);
+            }
+        }else{
+            result = pages[0][0];
         }
+
         return result;
     }
 

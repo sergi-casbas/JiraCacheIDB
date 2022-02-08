@@ -19,7 +19,7 @@ class JiraCachedDB {
         return await this._query_jira_api( this.base_url + "rest/api/latest/search?fields=id,updated&jql=" + JQL, resultType, statusFunction, statusArray);
     }
 
-    async raw_request(resourceURL, statusFunction=null, statusArray=null, resultType=null){
+    async raw_request(resourceURL, resultType=null, statusFunction=null, statusArray=null){
         if ( !resourceURL.includes("?")){ resourceURL = resourceURL + "?"; }
         return await this._query_jira_api( this.base_url + "rest/api/latest" + resourceURL, resultType, statusFunction, statusArray);
     }

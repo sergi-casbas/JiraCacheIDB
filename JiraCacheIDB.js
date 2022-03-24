@@ -24,7 +24,7 @@ class JiraCachedDB {
         return await this._query_jira_api( this.base_url + "rest/api/latest" + resourceURL, resultType, statusFunction, statusArray);
     }
 
-    async issue(issueObject, expand=null, callbackFunction = null){
+    async issue(issueObject, expand=null, callbackFunction = null, callbackParameter = null){
         // Wait until MAX_REQUESTS threshold is not raised.
         while (this._pending > this._MAX_REQUESTS){
             await this._sleep();
@@ -69,8 +69,11 @@ class JiraCachedDB {
             await this.indexed_db.setItem(issueObject.self, response, 'issues');
         }
 
-        // If a callback function is set, call it.
-        if (callbackFunction){callbackFunction(response);}
+        // If a callback function is set, call it with or without parameter.
+        if (callbackFunction) {
+            if (callbackParameter){callbackFunction(response, callbackParameter);}
+            else {callbackFunction(response);}
+        }
 
         // Mark as a resolved request.
         this._pending --;

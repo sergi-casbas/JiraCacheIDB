@@ -97,7 +97,7 @@ class JiraCachedDB {
      * @param {string} statusLabel Label of the status function.
      * @returns object with the jira request result
      */
-    async _query_jira_api(queryURL, resultType, statusFunction  = null, statusLabel = null){
+    async _query_jira_api(queryURL, resultType, statusFunction  = null, statusLabel = null, errorFunction  = null){
         let downloadedPages = 0;
         let pageSize = 100;
         let currentPage = 0;
@@ -113,7 +113,10 @@ class JiraCachedDB {
                 url:  queryURL+`&maxResults=${pageSize}&startAt=${currentPage*pageSize}`,
                 dataType: "json",
                 // Process server errors.
-                error :   function(server_response) { _ujg_gft_generic_onError(server_response); }, 
+                error :   function(server_response) { 
+                    if (statusFunction) {errorFunction(server_response);} 
+                    else console.error(server_response);
+                }, 
                 // Process server responses.
                 success : function(server_response) {				
                     responseJSON = JSON.parse(server_response); 
@@ -167,7 +170,7 @@ class JiraCachedDB {
             url:  requestURL,
             dataType: "json",
             // Process server errors.
-            error :   function(server_response) { _ujg_gft_generic_onError(server_response); }, //TO-DO
+            error :   function(server_response) { console.error(server_response); }, //TO-DO
             // Process server responses.
             success : function(server_response) {				
                 response = JSON.parse(server_response); 

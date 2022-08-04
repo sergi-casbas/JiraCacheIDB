@@ -17,7 +17,7 @@ class JiraCachedDB {
     
     async JQLQuery(JQL, statusFunction=null, statusArray=null, resultType="issues", extraFields=null){
         extraFields = extraFields ? 'id,updated,' + extraFields : 'id,updated';
-        return await this._query_jira_api(`${this.base_url}/rest/api/latest/search?fields=${extraFields}&jql=${JQL}`, resultType, statusFunction, statusArray);
+        return await this._query_jira_api(`${this.base_url}rest/api/latest/search?fields=${extraFields}&jql=${JQL}`, resultType, statusFunction, statusArray);
     }
 
     async raw_request(resourceURL, resultType=null, statusFunction=null, statusArray=null){

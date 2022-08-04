@@ -1,0 +1,9 @@
+{
+    "esversion": 8,
+    "globals": {
+        "document" : true,
+        "alert" : true,
+        "console" : true,
+        "define" : true
+    }
+}

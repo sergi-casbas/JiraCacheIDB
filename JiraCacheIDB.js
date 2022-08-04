@@ -1,7 +1,7 @@
 class JiraCachedDB {
     /**
      * 
-     * @param {string} base_url Optional. Jira instance server base url https://myinstance.atllasian.net
+     * @param {string} base_url Optional. Jira instance server base url https://<myinstance>.atllasian.net
      * @param {integer} max_request Optional. Max number of concurrent requests to Jira. WARNING change it may drive to unexpected results.
      */
     constructor(base_url="/", max_request=100) {
@@ -15,8 +15,9 @@ class JiraCachedDB {
         await this.indexed_db.open(['issues'], 1);
     }
     
-    async JQLQuery(JQL, statusFunction=null, statusArray=null, resultType="issues"){
-        return await this._query_jira_api( this.base_url + "rest/api/latest/search?fields=id,updated&jql=" + JQL, resultType, statusFunction, statusArray);
+    async JQLQuery(JQL, statusFunction=null, statusArray=null, resultType="issues", extraFields=null){
+        extraFields = extraFields ? 'id,updated,' + extraFields : 'id,updated';
+        return await this._query_jira_api(`${this.base_url}/rest/api/latest/search?fields=${extraFields}&jql=${JQL}`, resultType, statusFunction, statusArray);
     }
 
     async raw_request(resourceURL, resultType=null, statusFunction=null, statusArray=null){
